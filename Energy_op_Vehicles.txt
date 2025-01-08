@@ -1,0 +1,173 @@
+
+'''Energy Optimization System for Heavy Equipment'''
+
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <thread>
+#include <chrono>
+
+// EnergySource interface
+class EnergySource {
+public:
+    virtual double getEnergyLevel() const = 0;
+    virtual void consumeEnergy(double amount) = 0;
+    virtual ~EnergySource() = default;
+};
+
+// EnergyConsumptionUnit interface
+class EnergyConsumptionUnit {
+public:
+    virtual void consumeEnergy(double amount) = 0;
+    virtual double getEnergyConsumptionRate() const = 0;
+    virtual ~EnergyConsumptionUnit() = default;
+};
+
+// Fuel class
+class Fuel : public EnergySource {
+private:
+    double fuelLevel;
+
+public:
+    Fuel(double level) : fuelLevel(level) {}
+
+    double getEnergyLevel() const override {
+        return fuelLevel;
+    }
+
+    void consumeEnergy(double amount) override {
+        fuelLevel -= amount;
+    }
+};
+
+// ElectricBattery class
+class ElectricBattery : public EnergySource {
+private:
+    double batteryLevel;
+
+public:
+    ElectricBattery(double level) : batteryLevel(level) {}
+
+    double getEnergyLevel() const override {
+        return batteryLevel;
+    }
+
+    void consumeEnergy(double amount) override {
+        batteryLevel -= amount;
+    }
+};
+
+// Engine class
+class Engine : public EnergyConsumptionUnit {
+private:
+    double consumptionRate;
+
+public:
+    Engine(double rate) : consumptionRate(rate) {}
+
+    void consumeEnergy(double amount) override {
+        // Logic to consume energy
+    }
+
+    double getEnergyConsumptionRate() const override {
+        return consumptionRate;
+    }
+};
+
+// Hydraulics class
+class Hydraulics : public EnergyConsumptionUnit {
+private:
+    double consumptionRate;
+
+public:
+    Hydraulics(double rate) : consumptionRate(rate) {}
+
+    void consumeEnergy(double amount) override {
+        // Logic to consume energy
+    }
+
+    double getEnergyConsumptionRate() const override {
+        return consumptionRate;
+    }
+};
+
+class EnergyOptimizer {
+private:
+    std::vector<std::shared_ptr<EnergySource>> energySources;
+    std::vector<std::shared_ptr<EnergyConsumptionUnit>> energyConsumers;
+
+public:
+    EnergyOptimizer(const std::vector<std::shared_ptr<EnergySource>>& sources,
+                    const std::vector<std::shared_ptr<EnergyConsumptionUnit>>& consumers)
+        : energySources(sources), energyConsumers(consumers) {}
+
+    void optimizeEnergyUsage() {
+        // Logic to optimize energy usage
+        for (const auto& consumer : energyConsumers) {
+            for (const auto& source : energySources) {
+                double consumptionRate = consumer->getEnergyConsumptionRate();
+                if (source->getEnergyLevel() >= consumptionRate) {
+                    source->consumeEnergy(consumptionRate);
+                    consumer->consumeEnergy(consumptionRate);
+                }
+            }
+        }
+    }
+
+    void displayStatus() const {
+        std::cout << "Energy Sources Status:\n";
+        for (const auto& source : energySources) {
+            std::cout << " - Energy Level: " << source->getEnergyLevel() << "\n";
+        }
+        std::cout << "Energy Consumers Status:\n";
+        for (const auto& consumer : energyConsumers) {
+            std::cout << " - Consumption Rate: " << consumer->getEnergyConsumptionRate() << "\n";
+        }
+    }
+};
+
+class EnergyMonitor {
+private:
+    EnergyOptimizer& optimizer;
+
+public:
+    EnergyMonitor(EnergyOptimizer& opt) : optimizer(opt) {}
+
+    void operator()() {
+        while (true) {
+            optimizer.optimizeEnergyUsage();
+            optimizer.displayStatus();
+            std::this_thread::sleep_for(std::chrono::seconds(1)); // Update every second
+        }
+    }
+};
+
+int main() {
+    
+    std::shared_ptr<EnergySource> fuel = std::make_shared<Fuel>(100.0);
+    std::shared_ptr<EnergySource> battery = std::make_shared<ElectricBattery>(100.0);
+
+    
+    std::shared_ptr<EnergyConsumptionUnit> engine = std::make_shared<Engine>(10.0);
+    std::shared_ptr<EnergyConsumptionUnit> hydraulics = std::make_shared<Hydraulics>(5.0);
+
+    // Create a list of energy sources and consumers
+    std::vector<std::shared_ptr<EnergySource>> energySources = {fuel, battery};
+    std::vector<std::shared_ptr<EnergyConsumptionUnit>> energyConsumers = {engine, hydraulics};
+
+    // Create an EnergyOptimizer instance
+    EnergyOptimizer optimizer(energySources, energyConsumers);
+
+    // Create and start the EnergyMonitor thread
+    EnergyMonitor monitor(optimizer);
+    std::thread monitorThread(monitor);
+
+    // Let the monitor run for a few seconds
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    
+    monitorThread.detach();
+
+    std::cout << "Energy optimization system is running..." << std::endl;
+    return 0;
+}
